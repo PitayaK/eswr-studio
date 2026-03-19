@@ -181,9 +181,25 @@ Available fields:
 - `youtube_channel_id` — YouTube channel ID (the part after /channel/)
 - `bilibili_uid` — Bilibili space UID (the number after /space/)
 
-### Step 4: Confirm
+### Step 4: Sync content (if RSS or video channel was set)
 
-Tell the user what was updated. If they set podcast_rss_url or video channel, remind them that content will be synced automatically.
+If the user set `podcast_rss_url`, trigger podcast sync:
+
+```bash
+curl -s -X POST "https://elsewhere.news/api/sync/podcasts" \
+  -H "Authorization: Bearer $ELSEWHERE_API_TOKEN" | python3 -m json.tool
+```
+
+If the user set `youtube_channel_id` or `bilibili_uid`, trigger video sync:
+
+```bash
+curl -s -X POST "https://elsewhere.news/api/sync/videos" \
+  -H "Authorization: Bearer $ELSEWHERE_API_TOKEN" | python3 -m json.tool
+```
+
+### Step 5: Confirm
+
+Tell the user what was updated, and how many podcasts/videos were synced (if applicable).
 
 Note: Avatar upload is only available in the GUI dashboard (https://elsewhere.news/dashboard/login).
 
