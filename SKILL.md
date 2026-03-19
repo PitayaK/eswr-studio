@@ -95,22 +95,11 @@ From the article content in the conversation, extract:
 - Remove source document artifacts (Feishu/Word metadata)
 - Clean paragraph separation (double newline)
 
-### Step 4: Ask for category (if not specified)
-
-Fetch available categories:
-
-```bash
-curl -s "https://kkcktdhgzddmdjdjoenc.supabase.co/rest/v1/categories?select=id,title_zh,slug" \
-  -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrY2t0ZGhnemRkbWRqZGpvZW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MDgwNzIsImV4cCI6MjA4OTM4NDA3Mn0.7RaxKWdOEwM95KgDSEv3nUYlrO73drFuRaIgvjs-wZk" | python3 -m json.tool
-```
-
-Ask the user to pick one, or suggest one based on content.
-
-### Step 5: Generate a slug
+### Step 4: Generate a slug
 
 URL-friendly, lowercase, hyphenated. Use English title if available, otherwise romanize Chinese.
 
-### Step 6: Create draft
+### Step 5: Create draft
 
 Write JSON payload to temp file:
 
@@ -120,8 +109,7 @@ cat > /tmp/article.json << 'JSONEOF'
   "title_zh": "中文标题",
   "slug": "the-slug",
   "excerpt_zh": "中文摘要",
-  "body_zh": "Full article body in Markdown",
-  "category_id": "CATEGORY_ID_VALUE"
+  "body_zh": "Full article body in Markdown"
 }
 JSONEOF
 ```
@@ -135,9 +123,9 @@ curl -s -X POST "https://elsewhere.news/api/articles" \
   -d @/tmp/article.json | python3 -m json.tool
 ```
 
-### Step 7: Confirm
+### Step 6: Confirm
 
-Tell the user: article title, category, status (Draft).
+Tell the user: article title, status (Draft).
 
 ---
 
