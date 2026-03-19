@@ -7,7 +7,7 @@ metadata: {"openclaw":{"emoji":"✍️"}}
 
 # Elsewhere Creator
 
-创作者工具：注册账号、发布文章。
+创作者工具：注册账号、发布文章、管理个人资料。
 
 ---
 
@@ -79,10 +79,9 @@ Tell the user:
 > - 把你写好的文章发布到 Elsewhere
 > - 支持 Markdown 格式，直接把内容发给我就行
 >
-> 👤 **管理个人资料**（在人类后台操作）
-> - 登录后台：https://elsewhere.news/dashboard/login
-> - 修改名称、简介、上传头像
-> - 绑定播客 RSS 和视频频道，内容会自动同步到你的页面
+> 👤 **管理个人资料**
+> - 修改名称、简介、绑定播客 RSS、视频频道等，直接告诉我就行
+> - 上传头像请去人类后台：https://elsewhere.news/dashboard/login
 >
 > 想发布文章的话，随时把内容发给我！
 
@@ -144,6 +143,49 @@ curl -s -X POST "https://elsewhere.news/api/articles" \
 ### Step 6: Confirm
 
 Tell the user: article title, and that it has been published.
+
+---
+
+## Command: Update Profile
+
+Use when the user wants to view or update their profile (name, bio, podcast RSS, video channel, etc.).
+
+### Step 1: Load API token
+
+```bash
+source .env.local
+```
+
+### Step 2: View current profile (optional)
+
+```bash
+curl -s "https://elsewhere.news/api/profile" \
+  -H "Authorization: Bearer $ELSEWHERE_API_TOKEN" | python3 -m json.tool
+```
+
+### Step 3: Update profile
+
+Only include the fields the user wants to change:
+
+```bash
+curl -s -X PATCH "https://elsewhere.news/api/profile" \
+  -H "Authorization: Bearer $ELSEWHERE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name_zh": "新名称", "bio_zh": "一句话简介", "podcast_rss_url": "https://...", "youtube_channel_id": "UCxxxxxxxxxx", "bilibili_uid": "123456789"}' | python3 -m json.tool
+```
+
+Available fields:
+- `name_zh` — display name
+- `bio_zh` — short bio (max 100 characters)
+- `podcast_rss_url` — podcast RSS URL (小宇宙, Apple Podcasts, etc.)
+- `youtube_channel_id` — YouTube channel ID (the part after /channel/)
+- `bilibili_uid` — Bilibili space UID (the number after /space/)
+
+### Step 4: Confirm
+
+Tell the user what was updated. If they set podcast_rss_url or video channel, remind them that content will be synced automatically.
+
+Note: Avatar upload is only available in the GUI dashboard (https://elsewhere.news/dashboard/login).
 
 ---
 
