@@ -193,9 +193,17 @@ curl -s -X POST "https://elsewhere.news/api/import" \
 
 The API returns: `title`, `content` (Markdown with images already uploaded), `cover_image_url`, `published_at` (original publish date from WeChat), and image counts.
 
-### Step 3: Review and publish
+### Step 3: Review content and fix headings
 
-Show the extracted title and a brief preview of the content to the user. Ask if they want to publish directly or make changes first.
+The import API faithfully preserves formatting — bold text stays as `**bold**`. Before publishing, scan the content for lines that look like section headers (e.g., person names, chapter titles) and upgrade them from `**bold**` to `## heading`.
+
+Rules for upgrading to `##`:
+- Short text (under 40 characters)
+- Looks like a name, title, or topic label (not a full sentence or explanatory phrase)
+- Examples that SHOULD become `##`: `**曹曦 @MONOLITH**`, `**第一章**`, `**结语**`
+- Examples that should STAY bold: `**以下排名不分先后，按姓名首字母**`, `**注：本文仅供参考**`
+
+Show the user the extracted title and a brief preview. Ask if they want to publish directly or make changes first.
 
 If ready to publish, save the result to a temp file and publish:
 
