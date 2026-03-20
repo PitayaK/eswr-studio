@@ -18,7 +18,7 @@ metadata: {"openclaw":{"emoji":"✍️"}}
 > curl -s https://raw.githubusercontent.com/PitayaK/elsewhere-creator/main/SKILL.md
 > ```
 
-**当前版本：v2.2**
+**当前版本：v2.3**
 
 ---
 
@@ -122,6 +122,11 @@ From the article content in the conversation, extract:
 - Preserve headings, bold, italic, links, lists, code blocks, blockquotes, tables, images
 - Remove source document artifacts (Feishu/Word metadata)
 - Clean paragraph separation (double newline)
+- **Apply bold rendering fixes** — see "② Bold rendering fixes (CommonMark + CJK)" in the "Import from WeChat" section. When publishing manually (not via import API), the server-side fixes are NOT applied, so you MUST handle them yourself:
+  - Remove standalone `**` lines
+  - Convert WeChat sub-bullets (`**    - **text` → `- text`)
+  - Add space after closing `**` when followed by CJK: `**word：**中文` → `**word：** 中文`
+  - Guard against `**N.**` false positives (use lookbehind `(?<![^\s*])`)
 
 ### Step 4: Upload images
 
@@ -250,6 +255,82 @@ The import API already converts large-font-size elements to `##` / `###` automat
   - QR code images are OK to keep — just leave them as regular `![]()` images
 - Remove excessive blank lines (max 1 blank line between paragraphs)
 - Clean up stray punctuation or formatting artifacts from the HTML conversion
+
+**② Bold rendering fixes (CommonMark + CJK)**
+
+> The server-side import API (`/api/import`) already applies these fixes automatically. You normally do NOT need to do them yourself. This section exists so you can **debug rendering issues** and apply fixes manually when using "Publish Article" (non-import path) or when the API misses an edge case.
+
+**Background — why bold breaks in Chinese articles:**
+
+CommonMark's closing delimiter rule: a closing `**` preceded by Unicode punctuation (like `：`, `。`, `，`, `！`) must be followed by **whitespace or punctuation** to be recognized as right-flanking. Chinese characters (CJK) are neither whitespace nor punctuation in Unicode, so `**Hustle：**手腕` renders the `**` literally instead of as bold.
+
+Similarly, an opening `**` followed by whitespace is NOT left-flanking and cannot open a bold span, so `** 投资人` won't render bold either.
+
+**Fix 1 — Standalone `**` lines (WeChat bold wrapper around images)**
+
+WeChat wraps image blocks in `<strong>`, which converts to `**` on its own line. Remove these:
+```
+Before:  **
+         ![](image.jpg)
+         **
+After:   ![](image.jpg)
+```
+Regex: `/^\*\*\s*$/gm` → remove the line.
+
+**Fix 2 — WeChat sub-bullets `**    - **text`**
+
+WeChat formats indented bullet items as bold spans. The closing `**` after `- ` is preceded by a space → not right-flanking → literal `**`. Convert to plain markdown bullets:
+
+| Pattern | Fix |
+|---------|-----|
+| `**    - **text` | `- text` |
+| `**    - label**中文` | `- **label** 中文` (label stays bold, CJK text plain) |
+| `**    - other` | `- other` |
+
+**Fix 3 — `**...CJK-punct**CJK` → add space after closing `**`**
+
+This is the most common issue. When a bold span ends with Chinese punctuation and is immediately followed by a CJK character:
+```
+Before:  **Hustle：**手腕          → literal **
+After:   **Hustle：** 手腕         → renders bold ✓
+
+Before:  **一个决定。**投资人听完   → literal **
+After:   **一个决定。** 投资人听完  → renders bold ✓
+```
+
+Affected punctuation: `，。！？；：、""''（）【】…—`
+
+**⚠️ CRITICAL — false positive guard for `**N.**` numbered items:**
+
+Many articles have bold numbered items like `**5.**` or `**第三章.**`. A naive regex would consume the CLOSING `**` of `**5.**` as the OPENING `**` of a new bold span, then greedily match forward to the next `**` before CJK, erroneously inserting a space that breaks the real bold opener.
+
+Example of what goes WRONG without the guard:
+```
+**5.** 见投资人时...写就。**投资人听完说
+                                  ↑ naive regex matches from here
+→ 写就。** 投资人听完说    ← BROKEN! ** followed by space = not left-flanking
+```
+
+The fix: use a lookbehind `(?<![^\s*])` — the opening `**` must be preceded by whitespace, another `*`, or start-of-string. This prevents matching the closing `**` of `**5.**` (preceded by `.`, which is not whitespace or `*`).
+
+Correct regex:
+```
+/(?<![^\s*])(\*\*[^*\n]+[，。！？；：、""''（）【】…—])\*\*(?=[^\x00-\x7F\s])/g → "$1** "
+```
+
+**Fix 4 — `**word：**Chinese` (colon-specific case)**
+
+A subset of Fix 3, but very common in interview-style articles with speaker labels:
+```
+Before:  **张三：**我觉得...   → literal **
+After:   **张三：** 我觉得...  → renders bold ✓
+```
+Both full-width `：` and ASCII `:` should be handled.
+
+**When to apply these manually:**
+- When using "Publish Article" command (user pastes markdown directly, not via import API)
+- When debugging a published article where bold renders as literal `**`
+- When the import API's server-side fix misses an edge case
 
 **What you MUST NOT do:**
 - Change, rewrite, summarize, or remove any text content
