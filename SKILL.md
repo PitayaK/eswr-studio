@@ -233,7 +233,7 @@ content = r['content']  # Use this EXACTLY — images are already uploaded
 cover = r.get('cover_image_url', '')
 pub = r.get('published_at', '')
 slug = re.sub(r'[^a-z0-9]+', '-', title.lower())[:50].strip('-') or f'article-{int(__import__(\"time\").time())}'
-excerpt = content[:100].replace('\n', ' ').strip()
+excerpt = r.get('excerpt', '')  # First meaningful paragraph from import API
 article = {'title_zh': title, 'slug': slug, 'excerpt_zh': excerpt, 'body_zh': content, 'cover_image_url': cover, 'published_at': pub}
 json.dump(article, open('/tmp/article.json', 'w'), ensure_ascii=False)
 print('slug:', slug)
