@@ -18,7 +18,7 @@ metadata: {"openclaw":{"emoji":"✍️"}}
 > curl -s https://raw.githubusercontent.com/PitayaK/elsewhere-creator/main/SKILL.md
 > ```
 
-**当前版本：v1.6**
+**当前版本：v1.7**
 
 ---
 
@@ -307,6 +307,105 @@ Only do this if `failed_images` is present and non-empty. Skip images that still
 ### Step 4: Confirm
 
 Tell the user: article title, published date, cover image status, and how many images were embedded.
+
+---
+
+## Command: Batch Import from WeChat
+
+Use when the user shares **multiple** WeChat article URLs and wants to publish them all.
+
+### Step 1: Load API token
+
+```bash
+source .env.local
+```
+
+### Step 2: Collect all URLs
+
+Ask the user to confirm the list of URLs before starting. Number them 1, 2, 3...
+
+### Step 3: Process each article sequentially
+
+For each URL (index N = 1, 2, 3...):
+
+**3a. Import and save to file immediately**
+
+```bash
+curl -s -X POST "https://elsewhere.news/api/import" \
+  -H "Authorization: Bearer $ELSEWHERE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\": \"WECHAT_URL\"}" > /tmp/import_N.json
+cat /tmp/import_N.json | python3 -m json.tool
+```
+
+If the import fails (error field in response, or `content` is empty), log the failure and skip to the next URL.
+
+**3b. Reformat Markdown**
+
+Read `/tmp/import_N.json`, apply the same cleanup rules as in "Import from WeChat" Step 3:
+- Identify bold paragraphs that are clearly headings → upgrade to `##`
+- Remove WeChat embed artifacts
+- Remove excessive blank lines
+
+Write the cleaned content back:
+
+```bash
+python3 -c "
+import json
+with open('/tmp/import_N.json') as f: r = json.load(f)
+# Apply your cleaned content here
+r['content_clean'] = '''CLEANED_CONTENT_HERE'''
+with open('/tmp/import_N.json', 'w') as f: json.dump(r, f, ensure_ascii=False)
+"
+```
+
+**3c. Build and publish**
+
+```bash
+python3 -c "
+import json, re, time
+r = json.load(open('/tmp/import_N.json'))
+title = r['title']
+content = r.get('content_clean') or r['content']
+cover = r.get('cover_image_url', '')
+pub = r.get('published_at', '')
+excerpt = r.get('excerpt', '')
+slug = re.sub(r'[^a-z0-9]+', '-', title.lower())[:50].strip('-') or f'article-{int(time.time())}'
+article = {'title_zh': title, 'title_en': 'ENGLISH_TITLE', 'slug': slug,
+           'excerpt_zh': excerpt, 'excerpt_en': 'ENGLISH_EXCERPT',
+           'body_zh': content, 'cover_image_url': cover, 'published_at': pub}
+json.dump(article, open('/tmp/article_N.json', 'w'), ensure_ascii=False)
+print('slug:', slug)
+"
+
+curl -s -X POST "https://elsewhere.news/api/articles" \
+  -H "Authorization: Bearer $ELSEWHERE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d @/tmp/article_N.json | python3 -m json.tool
+```
+
+Fill in `ENGLISH_TITLE` and `ENGLISH_EXCERPT` with your own translations before running.
+
+**3d. Handle failed images** (same as single import — only if `failed_images` is present)
+
+**3e. Log result**
+
+After each article, briefly note: ✅ title + URL, or ❌ title + reason for failure. Keep it short to avoid bloating context.
+
+### Step 4: Summary
+
+After all articles are done, show a final table:
+
+| # | 标题 | 状态 | 链接 |
+|---|------|------|------|
+| 1 | ... | ✅ | ... |
+| 2 | ... | ❌ 导入失败 | — |
+
+### Context management note
+
+- Save every import result to `/tmp/import_N.json` immediately — don't hold full article content in memory
+- After publishing each article, you only need to remember the title and result URL
+- If you feel context is getting long (10+ articles), wrap up the current batch and ask the user if they want to continue in a new session
 
 ---
 
