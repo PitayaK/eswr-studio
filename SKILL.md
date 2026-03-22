@@ -511,7 +511,8 @@ excerpt = r.get('excerpt', '')
 slug = re.sub(r'[^a-z0-9]+', '-', title.lower())[:50].strip('-') or f'article-{int(time.time())}'
 article = {'title_zh': title, 'title_en': 'ENGLISH_TITLE', 'slug': slug,
            'excerpt_zh': excerpt, 'excerpt_en': 'ENGLISH_EXCERPT',
-           'body_zh': content, 'cover_image_url': cover, 'published_at': pub}
+           'body_zh': content, 'cover_image_url': cover, 'published_at': pub,
+           'ai_summary': 'AI_SUMMARY_HERE', 'preview_excerpt': 'PREVIEW_EXCERPT_HERE'}
 json.dump(article, open('/tmp/article_N.json', 'w'), ensure_ascii=False)
 print('slug:', slug)
 "
@@ -522,7 +523,7 @@ curl -s -X POST "https://elsewhere.news/api/articles" \
   -d @/tmp/article_N.json | python3 -m json.tool
 ```
 
-Fill in `ENGLISH_TITLE` and `ENGLISH_EXCERPT` with your own translations before running.
+Fill in `ENGLISH_TITLE`, `ENGLISH_EXCERPT`, `AI_SUMMARY_HERE`, and `PREVIEW_EXCERPT_HERE` with your own content before running. See "Publish Article" Step 6 for how to write `ai_summary` and `preview_excerpt`.
 
 **3d. Rescue remaining WeChat images** (always run before publishing)
 
