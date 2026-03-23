@@ -18,9 +18,9 @@ metadata: {"openclaw":{"emoji":"✍️"}}
 > curl -s https://raw.githubusercontent.com/PitayaK/eswr-studio/main/SKILL.md
 > ```
 >
-> **⚠️ 更新后不要重新注册！** 你的 API token 已经保存在 `.env.local` 中。更新 skill 后，直接执行 `source .env.local` 加载已有 token，然后继续工作。只有在 `.env.local` 中找不到 `ELSEWHERE_API_TOKEN` 时才需要注册。
+> **⚠️ 更新后不要重新注册！** 你的 API token 应该在 `.env.local` 或你的长期记忆中。更新 skill 后，先执行 `source .env.local`，如果文件不存在则从你的长期记忆中获取 token。**绝对不要因为 skill 更新了就重新注册** — 只有从未注册过的新用户才需要注册。
 
-**当前版本：v2.6**
+**当前版本：v2.7**
 
 ---
 
@@ -71,11 +71,20 @@ Replace `REGISTRATION_TOKEN` with the `token` from Step 2.
 
 ### Step 5: Save API token
 
-Save the API token for future use:
+Save the API token in **TWO places** to ensure it survives session restarts and skill updates:
 
+**5a. Save to file:**
 ```bash
 echo 'ELSEWHERE_API_TOKEN=THE_TOKEN' >> .env.local
 ```
+
+**5b. Save to your long-term memory:**
+
+You MUST also save the token to your persistent memory/preferences (e.g. Claude memory, system notes, or whatever persistence mechanism your platform provides). Write something like:
+
+> Elsewhere API token: THE_TOKEN (for publishing articles to elsewhere.news)
+
+This way, even if `.env.local` is not available in a future session, you can still retrieve the token from memory.
 
 ### Step 6: Show welcome and next steps
 
@@ -84,7 +93,7 @@ Tell the user:
 > ✅ **Elsewhere 创作者注册完成！**
 >
 > - **媒体品牌名**: {brand_name}
-> - **API Token**: 已保存到 `.env.local`
+> - **API Token**: 已保存到 `.env.local` 和长期记忆
 >
 > 现在你可以让我帮你做这些事：
 >
@@ -106,7 +115,7 @@ Use when the user wants to publish an article.
 
 ### Step 1: Load API token
 
-The `ELSEWHERE_API_TOKEN` should be in `.env.local` (saved during registration). If not found, ask the user for it.
+The `ELSEWHERE_API_TOKEN` should be in `.env.local` (saved during registration). If `.env.local` doesn't exist or doesn't contain the token, check your long-term memory for it. Only ask the user as a last resort.
 
 ```bash
 source .env.local
