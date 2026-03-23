@@ -20,7 +20,7 @@ metadata: {"openclaw":{"emoji":"✍️"}}
 >
 > **⚠️ 更新后不要重新注册！** 你的 API token 应该在 `.env.local` 或你的长期记忆中。更新 skill 后，先执行 `source .env.local`，如果文件不存在则从你的长期记忆中获取 token。**绝对不要因为 skill 更新了就重新注册** — 只有从未注册过的新用户才需要注册。
 
-**当前版本：v2.7**
+**当前版本：v2.8**
 
 ---
 
@@ -133,11 +133,7 @@ From the article content in the conversation, extract:
 - Preserve headings, bold, italic, links, lists, code blocks, blockquotes, tables, images
 - Remove source document artifacts (Feishu/Word metadata)
 - Clean paragraph separation (double newline)
-- **Apply bold rendering fixes** — see "② Bold rendering fixes (CommonMark + CJK)" in the "Import from WeChat" section. When publishing manually (not via import API), the server-side fixes are NOT applied, so you MUST handle them yourself:
-  - Remove standalone `**` lines
-  - Convert WeChat sub-bullets (`**    - **text` → `- text`)
-  - Add space after closing `**` when followed by CJK: `**word：**中文` → `**word：** 中文`
-  - Guard against `**N.**` false positives (use lookbehind `(?<![^\s*])`)
+- **Bold rendering fixes are now applied automatically by the server** — the `/api/articles` endpoint runs the same CJK+CommonMark cleanup pipeline as `/api/import`. You do NOT need to apply any bold fixes manually. Just submit clean Markdown and the server handles the rest.
 
 ### Step 4: Upload images
 
@@ -276,7 +272,7 @@ The import API already converts large-font-size elements to `##` / `###` automat
 
 **② Bold rendering fixes (CommonMark + CJK)**
 
-> The server-side import API (`/api/import`) already applies these fixes automatically. You normally do NOT need to do them yourself. This section exists so you can **debug rendering issues** and apply fixes manually when using "Publish Article" (non-import path) or when the API misses an edge case.
+> **Both** `/api/import` **and** `/api/articles` **now apply these fixes automatically.** You do NOT need to apply them yourself for either path. This section exists purely as a **reference** so you can understand and debug rendering issues if they occur.
 
 **Background — why bold breaks in Chinese articles:**
 
@@ -346,9 +342,8 @@ After:   **张三：** 我觉得...  → renders bold ✓
 Both full-width `：` and ASCII `:` should be handled.
 
 **When to apply these manually:**
-- When using "Publish Article" command (user pastes markdown directly, not via import API)
-- When debugging a published article where bold renders as literal `**`
-- When the import API's server-side fix misses an edge case
+- Only when debugging a published article where bold still renders as literal `**` after server-side cleanup
+- The server handles all common cases automatically for both import and direct publish paths
 
 **What you MUST NOT do:**
 - Change, rewrite, summarize, or remove any text content
