@@ -1,5 +1,6 @@
 ---
 name: eswr-studio
+version: 2.8.0
 description: Elsewhere creator studio — register a new account (with invite code) and publish articles.
 user-invocable: true
 metadata: {"openclaw":{"emoji":"✍️"}}
